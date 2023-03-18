@@ -1,11 +1,16 @@
 package com.example.demoroomdatabaseapp
 
+import android.content.Context
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.demoroomdatabaseapp.databinding.ActivityAddUserBinding
+import java.util.*
 
 class AddUserActivity : AppCompatActivity() {
     lateinit var binding: ActivityAddUserBinding
@@ -14,6 +19,8 @@ class AddUserActivity : AppCompatActivity() {
     private var selectedImage = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val pref = getSharedPreferences("pref", Context.MODE_PRIVATE)
+        setAppLocale(pref.getString("language","en"),this@AddUserActivity)
         binding = ActivityAddUserBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -26,8 +33,10 @@ class AddUserActivity : AppCompatActivity() {
         val isEdit = intent.getBooleanExtra("isEdit", false)
         if (isEdit) {
 
-            binding.tvTitle.text = "Edit User"
-            binding.btnAddOrSave.text = "Save"
+            //binding.tvTitle.text = "Edit User"
+            binding.tvTitle.setText(R.string.tv_title2)
+            //binding.btnAddOrSave.text = "Save"
+            binding.btnAddOrSave.setText(R.string.btn_add_or_save2)
             binding.tietName.setText(intent.getStringExtra("name"))
             binding.tietSurname.setText(intent.getStringExtra("surname"))
             binding.ivProfile.setImageResource(intent.getIntExtra("profile", R.drawable.harry_potter))
@@ -37,9 +46,11 @@ class AddUserActivity : AppCompatActivity() {
         } else {
             //addUser()
 
-            binding.tvTitle.text = "New User"
-            binding.btnAddOrSave.text = "Add"
-
+            //binding.tvTitle.text = "New User"
+            //binding.btnAddOrSave.text = "Add"
+            binding.tvTitle.setText(R.string.tv_title)
+            //binding.btnAddOrSave.text = "Save"
+            binding.btnAddOrSave.setText(R.string.btn_add_or_save)
 
             Log.d("AddUser", "else jagdayi")
         }
@@ -127,10 +138,15 @@ class AddUserActivity : AppCompatActivity() {
         }
     }
 
-    private fun addUser() {
-
-        binding.btnAddOrSave.setOnClickListener {
-
+    private fun setAppLocale(languageFromPreference: String?, context: Context) {
+        if (languageFromPreference != null) {
+            val resources: Resources = context.resources
+            val dm: DisplayMetrics = resources.displayMetrics
+            val config: Configuration = resources.configuration
+            config.setLocale(Locale(languageFromPreference.lowercase(Locale.ROOT)))
+            val pref = getSharedPreferences("pref", Context.MODE_PRIVATE)
+            pref.edit().putString("language",languageFromPreference.toString().lowercase()).apply()
+            resources.updateConfiguration(config, dm)
         }
     }
 }

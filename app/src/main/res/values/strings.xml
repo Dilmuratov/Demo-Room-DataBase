@@ -1,3 +1,11 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Demo Room DataBase App</string>
+    <string name="et_search">Search</string>
+    <string name="tv_title">New user</string>
+    <string name="tiet_name">Name</string>
+    <string name="tiet_surname">Surname</string>
+    <string name="btn_add_or_save">Add</string>
+    <string name="tv_change">Change</string>
+    <string name="tv_title2">Edit User</string>
+    <string name="btn_add_or_save2">Save</string>
 </resources>

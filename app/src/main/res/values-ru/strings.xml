@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Demo Room DataBase</string>
+    <string name="et_search">Поиск</string>
+    <string name="tv_title">Новый ползаватель</string>
+    <string name="tiet_name">Имя</string>
+    <string name="tiet_surname">Фамилия</string>
+    <string name="btn_add_or_save">Создать</string>
+    <string name="tv_change">Изменить</string>
+    <string name="tv_title2">Изменить пользователь</string>
+    <string name="btn_add_or_save2">Сохранить</string>
+</resources>

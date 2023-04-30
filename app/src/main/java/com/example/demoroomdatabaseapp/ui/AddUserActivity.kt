@@ -1,4 +1,4 @@
-package com.example.demoroomdatabaseapp
+package com.example.demoroomdatabaseapp.ui
 
 import android.content.Context
 import android.content.res.Configuration
@@ -8,23 +8,30 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.get
 import androidx.lifecycle.lifecycleScope
+import com.example.demoroomdatabaseapp.R
+import com.example.demoroomdatabaseapp.data.models.User
 import com.example.demoroomdatabaseapp.databinding.ActivityAddUserBinding
+import com.example.demoroomdatabaseapp.presentation.MainViewModel
 import java.util.*
 
 class AddUserActivity : AppCompatActivity() {
     lateinit var binding: ActivityAddUserBinding
-    lateinit var dao: UserDao
     lateinit var imageList: MutableList<Int>
+    private lateinit var viewModel: MainViewModel
     private var selectedImage = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val pref = getSharedPreferences("pref", Context.MODE_PRIVATE)
-        setAppLocale(pref.getString("language","en"),this@AddUserActivity)
+        setAppLocale(pref.getString("language", "en"), this@AddUserActivity)
+
         binding = ActivityAddUserBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        dao = UserDataBase.getInstance(this).getUsersDao()
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 
         val id = intent.getIntExtra("id", 0)
 
@@ -39,7 +46,12 @@ class AddUserActivity : AppCompatActivity() {
             binding.btnAddOrSave.setText(R.string.btn_add_or_save2)
             binding.tietName.setText(intent.getStringExtra("name"))
             binding.tietSurname.setText(intent.getStringExtra("surname"))
-            binding.ivProfile.setImageResource(intent.getIntExtra("profile", R.drawable.harry_potter))
+            binding.ivProfile.setImageResource(
+                intent.getIntExtra(
+                    "profile",
+                    R.drawable.harry_potter
+                )
+            )
 
             Log.d("AddUser", "editUser()")
 
@@ -63,14 +75,11 @@ class AddUserActivity : AppCompatActivity() {
 
                 if (name.isNotEmpty() && surname.isNotEmpty()) {
                     lifecycleScope.launchWhenResumed {
-                        dao.editUser(
-                            User(
-                                id = id,
-                                profile = imageList[selectedImage],
-                                name = name,
-                                surname = surname
-                            )
-                        )
+
+                        val user = User(id, imageList[selectedImage], name, surname)
+
+                        viewModel.editUser(user)
+
                         Log.d("SSSS", "$name, $surname")
                     }
                     Toast.makeText(this@AddUserActivity, "Succesfully edited", Toast.LENGTH_SHORT)
@@ -87,9 +96,11 @@ class AddUserActivity : AppCompatActivity() {
 
                 if (name.isNotEmpty() && surname.isNotEmpty()) {
                     lifecycleScope.launchWhenResumed {
-                        dao.addUser(User(0, imageList[selectedImage], name, surname))
+                        val user = User(0, imageList[selectedImage], name, surname)
+                        viewModel.addUser(user)
                     }
-                    Toast.makeText(this@AddUserActivity, "Succesfully added", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AddUserActivity, "Succesfully added", Toast.LENGTH_SHORT)
+                        .show()
                     finish()
                 } else Toast.makeText(
                     this@AddUserActivity,
@@ -145,7 +156,7 @@ class AddUserActivity : AppCompatActivity() {
             val config: Configuration = resources.configuration
             config.setLocale(Locale(languageFromPreference.lowercase(Locale.ROOT)))
             val pref = getSharedPreferences("pref", Context.MODE_PRIVATE)
-            pref.edit().putString("language",languageFromPreference.toString().lowercase()).apply()
+            pref.edit().putString("language", languageFromPreference.toString().lowercase()).apply()
             resources.updateConfiguration(config, dm)
         }
     }

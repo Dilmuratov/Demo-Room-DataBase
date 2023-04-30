@@ -1,4 +1,4 @@
-package com.example.demoroomdatabaseapp
+package com.example.demoroomdatabaseapp.data.local
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -6,9 +6,10 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.demoroomdatabaseapp.data.models.User
 
 @Dao
-interface UserDao {
+interface   UserDao {
 
     @Query("SELECT * FROM users")
     suspend fun getListOfUsers(): List<User>
@@ -24,7 +25,4 @@ interface UserDao {
 
     @Delete
     suspend fun deleteUser(user: User)
-
-    @Query("SELECT * FROM users WHERE id=:id")
-    suspend fun searchUserById(id: Int): User
 }

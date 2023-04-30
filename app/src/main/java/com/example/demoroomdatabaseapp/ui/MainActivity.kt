@@ -1,4 +1,4 @@
-package com.example.demoroomdatabaseapp
+package com.example.demoroomdatabaseapp.ui
 
 import android.content.Context
 import android.content.Intent
@@ -11,27 +11,38 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.example.demoroomdatabaseapp.data.models.User
 import com.example.demoroomdatabaseapp.databinding.ActivityMainBinding
+import com.example.demoroomdatabaseapp.presentation.MainViewModel
+import com.example.demoroomdatabaseapp.ui.adapter.UserAdapter
 import com.google.android.material.snackbar.Snackbar
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
-    lateinit var dao: UserDao
+    private lateinit var viewModel: MainViewModel
     var adapter = UserAdapter()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val pref = getSharedPreferences("pref",Context.MODE_PRIVATE)
-        setAppLocale(pref.getString("language","en"),this@MainActivity)
+
+        val pref = getSharedPreferences("pref", Context.MODE_PRIVATE)
+        setAppLocale(pref.getString("language", "en"), this@MainActivity)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+
         binding.recyclerView.adapter = adapter
 
-        dao = UserDataBase.getInstance(this).getUsersDao()
+        initObserves()
+
+        lifecycleScope.launchWhenResumed {
+            viewModel.getAllUsers()
+        }
 
         btnAdd()
 
@@ -41,57 +52,27 @@ class MainActivity : AppCompatActivity() {
 
         changeLanguage()
 
-        val itemTouchHelperCallBack = object :
-        ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ) = false
+        deleteUser()
 
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int){
-                val position = viewHolder.adapterPosition
-                val user: User = adapter.models[position]
+    }
 
-                Toast.makeText(this@MainActivity, "Deleted", Toast.LENGTH_SHORT).show()
-
-                lifecycleScope.launchWhenResumed {
-                    dao.deleteUser(user)
-                }
-
-                adapter.models.removeAt(position)
-                adapter.notifyItemRemoved(position)
-
-                Snackbar.make(
-                    viewHolder.itemView,
-                    "Deleted",
-                    Snackbar.LENGTH_SHORT
-                ).apply {
-                    setAction("Undo") {
-                        lifecycleScope.launchWhenResumed {
-                            dao.addUser(user)
-                        }
-                        adapter.models.add(position, user)
-                        adapter.notifyItemInserted(position)
-
-                        //binding.recyclerView.adapter = adapter
-
-                        binding.recyclerView.scrollToPosition(position)
-                    }
-                    setActionTextColor(Color.YELLOW)
-                }.show()
-            }
-        }
-
-        ItemTouchHelper(itemTouchHelperCallBack).apply {
-            attachToRecyclerView(binding.recyclerView)
+    fun initObserves() {
+        viewModel.getAllUserLiveData.observe(this) {
+            adapter.submitList(it)
         }
     }
 
     override fun onResume() {
         super.onResume()
         lifecycleScope.launchWhenResumed {
-            adapter.models = dao.getListOfUsers().toMutableList()
+            viewModel.getAllUsers()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        viewModel.getAllUserLiveData.observe(this) {
+            adapter.submitList(it.toMutableList())
         }
     }
 
@@ -110,17 +91,14 @@ class MainActivity : AppCompatActivity() {
             val str = binding.etSearch.text.toString()
             lifecycleScope.launchWhenResumed {
                 if (str.isNotEmpty()) {
-
-                    val list = dao.searchUser(str)
-                    adapter.models = list.toMutableList()
-
-                } else adapter.models = dao.getListOfUsers().toMutableList()
+                    viewModel.searchUsers(str)
+                }
             }
         }
     }
 
     private fun editStudent() {
-        adapter.setOnUserClickListener {user ->
+        adapter.setOnUserClickListener { user ->
             val intent = Intent(this@MainActivity, AddUserActivity::class.java)
             intent.putExtra("id", user.id)
             intent.putExtra("isEdit", true)
@@ -128,6 +106,54 @@ class MainActivity : AppCompatActivity() {
             intent.putExtra("surname", user.surname)
             intent.putExtra("profile", user.profile)
             startActivity(intent)
+        }
+    }
+
+    private fun deleteUser() {
+        val itemTouchHelperCallBack = object :
+            ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ) = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val user: User = adapter.getItemById(position)
+
+                Toast.makeText(this@MainActivity, "Deleted", Toast.LENGTH_SHORT).show()
+
+                lifecycleScope.launchWhenResumed {
+                    viewModel.deleteUser(user)
+                }
+
+                adapter.removeItem(user)
+                adapter.notifyItemRemoved(position)
+
+                Snackbar.make(
+                    viewHolder.itemView,
+                    "Deleted",
+                    Snackbar.LENGTH_SHORT
+                ).apply {
+                    setAction("Undo") {
+                        lifecycleScope.launchWhenResumed {
+                            viewModel.addUser(user)
+                        }
+                        adapter.addItem(user)
+                        adapter.notifyItemInserted(position)
+
+                        //binding.recyclerView.adapter = adapter
+
+                        binding.recyclerView.scrollToPosition(position)
+                    }
+                    setActionTextColor(Color.YELLOW)
+                }.show()
+            }
+        }
+
+        ItemTouchHelper(itemTouchHelperCallBack).apply {
+            attachToRecyclerView(binding.recyclerView)
         }
     }
 
@@ -164,7 +190,7 @@ class MainActivity : AppCompatActivity() {
             val config: Configuration = resources.configuration
             config.setLocale(Locale(languageFromPreference.lowercase(Locale.ROOT)))
             val pref = getSharedPreferences("pref", Context.MODE_PRIVATE)
-            pref.edit().putString("language",languageFromPreference.toString().lowercase()).apply()
+            pref.edit().putString("language", languageFromPreference.toString().lowercase()).apply()
             resources.updateConfiguration(config, dm)
         }
     }

@@ -1,4 +1,4 @@
-package com.example.demoroomdatabaseapp
+package com.example.demoroomdatabaseapp.data.models
 
 import androidx.annotation.DrawableRes
 import androidx.room.Entity
